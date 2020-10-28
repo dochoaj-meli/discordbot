@@ -1,0 +1,109 @@
+const Discord = require('discord.js');
+const client = new Discord.Client();
+const {prefix, token} = require("./config.json")
+var queue = new Map();
+
+const ytdl = require('ytdl-core');
+
+
+client.on('ready', () => {
+    console.log(`Logged in as ${client.user.tag}!`);
+});
+
+client.on('message', msg => {
+    if (msg.content === 'cheese') {
+        msg.reply('CheeseKimbap!'); 
+    } 
+
+    if(msg.content === 'sana is') {
+        msg.reply('Is Sana gay');
+    }
+   
+
+
+    if(msg === 'play'){
+        if(!args(0)) return;
+        let url = args.join("");
+        if(!url.match(/(youtube.com|youtube.be)\/(watch)?(\?v=)?(\S+)?/)) return message.channel.send("Porfavor inserta un link valido de YouTube!");
+
+        let serverQueue = queue.get(message.guild.id);
+        let vc = message.member.voice;
+
+        if(!vc) return message.channel.send('Debes estar conectado a un canal de voz');
+
+        if(!vc.channel.permissionFor(Client.user).has('Conectado') || !vc.channel.permissionFor(Client.user).has('SPEAK')) return message.channel.send("No tengo permisos!");
+        
+     let songinfo = ytdl.getInfo(url);
+        let song = {
+            tittle: songinfo.tittle,
+            url: songinfo.video_url
+        }
+    
+    if(!serverQueue){
+        let queueConst = {
+            textChannel: vc.channel,
+            voiceChannel: vc.channel,
+            connection: null,
+            songs: [],
+            volume: 5,
+            playing: true 
+            
+        
+    };
+
+    queue.set(message.guild.id, queueConst);
+    queueConst.songs.push(song);
+
+
+    try {
+        let connection = vc.channel.join();
+        queueConst.connection = connection
+        playSong(message.guild, queueConst.songs[0])
+    } catch (error){
+        console.log(error);
+        queue.delete(message.guild.id);
+        return message.channel.send("Ah ocurrido un error al reproducir la canción! Error: " + error);
+
+    }
+    
+} else {
+    serverQueue.songs.push(song);
+    return message.channel.send(`${song.title} has been added to the queue!`)
+        
+    }
+}
+});
+
+/** 
+ * 
+ * @param {Discord.guild} guild
+ * @param {object} song 
+ */
+async function playSong(guild, song){
+    let serverQueue = queue.get(guild.id);
+
+    if(!song){
+        serverQueue.voiceChannel.leave();
+        queue.delete(guild.id);
+        return;
+    }
+
+    const dispatcher = serverQueue.connection.play(ytdl(song.url)).on('No hay más canciones por reproducir, coloca más', () => {
+        serverQueue.songs.shift();
+        playSong(guild, serverQueue.songs[0]);
+    })
+
+    on('error', () => {
+    console.log(error)
+ 
+})
+
+dispatcher.setVolumeLogarithmic(serverQueue.volume / 5);
+
+
+
+
+
+}
+
+client.login('NzcxMDA1MjIwOTI1NzM0OTM1.X5l0kQ.vWqV3AvzBt2zCCORFeZiGGggOLA');
