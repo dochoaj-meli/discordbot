@@ -10,68 +10,64 @@ client.on('ready', () => {
     console.log(`Logged in as ${client.user.tag}!`);
 });
 
-client.on('message', msg => {
-    if (msg.content === 'cheese') {
+client.on('message', async (msg) => {
+    const args = msg.content.slice(prefix.length).trim().split(/ +/g);
+    const command = args.shift().toLowerCase();
+    const content = msg.content;
+    
+    if (content === 'cheese') {
         msg.reply('CheeseKimbap!'); 
     } 
 
-    if(msg.content === 'sana is') {
+    if(content === 'sana is') {
         msg.reply('Is Sana gay');
     }
    
+    if(command === 'play') {
+        if(!args[0]) return;
+        let url = args.join(" ");
+        if(!url.match(/(youtube.com|youtube.be)\/(watch)?(\?v=)?(\S+)?/)) return msg.channel.send("Porfavor inserta un link valido de YouTube!");
 
+        let serverQueue = queue.get(msg.guild.id);
+        let vc = msg.member.voice;
 
-    if(msg === 'play'){
-        if(!args(0)) return;
-        let url = args.join("");
-        if(!url.match(/(youtube.com|youtube.be)\/(watch)?(\?v=)?(\S+)?/)) return message.channel.send("Porfavor inserta un link valido de YouTube!");
+        if(!vc) return msg.channel.send('Debes estar conectado a un canal de voz');
 
-        let serverQueue = queue.get(message.guild.id);
-        let vc = message.member.voice;
-
-        if(!vc) return message.channel.send('Debes estar conectado a un canal de voz');
-
-        if(!vc.channel.permissionFor(Client.user).has('Conectado') || !vc.channel.permissionFor(Client.user).has('SPEAK')) return message.channel.send("No tengo permisos!");
+        if(!vc.channel.permissionFor(Client.user).has('Conectado') || !vc.channel.permissionFor(Client.user).has('SPEAK')) return msg.channel.send("No tengo permisos!");
         
-     let songinfo = ytdl.getInfo(url);
+        let songinfo = ytdl.getInfo(url);
         let song = {
             tittle: songinfo.tittle,
             url: songinfo.video_url
         }
     
-    if(!serverQueue){
-        let queueConst = {
-            textChannel: vc.channel,
-            voiceChannel: vc.channel,
-            connection: null,
-            songs: [],
-            volume: 5,
-            playing: true 
-            
-        
-    };
+        if(!serverQueue) {
+            let queueConst = {
+                textChannel: msg.channel,
+                voiceChannel: vc.channel,
+                connection: null,
+                songs: [],
+                volume: 5,
+                playing: true
+            };
 
-    queue.set(message.guild.id, queueConst);
-    queueConst.songs.push(song);
+            queue.set(msg.guild.id, queueConst);
+            queueConst.songs.push(song);
 
-
-    try {
-        let connection = vc.channel.join();
-        queueConst.connection = connection
-        playSong(message.guild, queueConst.songs[0])
-    } catch (error){
-        console.log(error);
-        queue.delete(message.guild.id);
-        return message.channel.send("Ah ocurrido un error al reproducir la canción! Error: " + error);
-
+            try {
+                let connection = await vc.channel.join();
+                queueConst.connection = connection
+                playSong(msg.guild, queueConst.songs[0])
+            } catch (error) {
+                console.log(error);
+                queue.delete(msg.guild.id);
+                return message.channel.send("Hubo un error reproduciendo la canción! Error: " + error);
+            }
+        } else {
+            serverQueue.songs.push(song);
+            return msg.channel.send(`${song.title} se agregó a la cola de canciones!`)
+        }
     }
-    
-} else {
-    serverQueue.songs.push(song);
-    return message.channel.send(`${song.title} has been added to the queue!`)
-        
-    }
-}
 });
 
 /** 
